@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import bs58 from 'bs58'
 import { createJupiterApiClient } from '@jup-ag/api'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { ReferralProvider } from '@jup-ag/referral-sdk'
 
 // Constants
 const SOLANA_RPC_ENDPOINT = 'https://nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
@@ -16,8 +17,8 @@ const SOLANA_WS_ENDPOINT = 'wss://ws-nd-220-380-828.p2pify.com/860578b990cf2dfee
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 // Platform fee settings
 const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
-// Fee recipient address - This is where the fees will be sent
-const FEE_RECIPIENT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
+// Jupiter Referral Key
+const REFERRAL_KEY = 'FrSZiQdctfgzZzV8PTGnWvRxCRzA2oBXqBHK6faMXwTK'
 
 // USDC token mint address
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
@@ -38,6 +39,7 @@ function Module5() {
   const [success, setSuccess] = useState('')
   const [txSignature, setTxSignature] = useState('')
   const [isBuying, setIsBuying] = useState(true) // true for buying, false for selling
+  const [referralTokenAccounts, setReferralTokenAccounts] = useState<{[key: string]: string}>({})
 
   // Handle swap transaction
   const handleSwap = async () => {
@@ -134,15 +136,16 @@ function Module5() {
         // Get quote for swap with platform fee
         console.log('Getting quote...')
         
-        // Create URL for quote with platform fee
+        // Create URL for quote with referral key
         const quoteUrl = new URL(`${JUPITER_API_ENDPOINT}/quote`)
         quoteUrl.searchParams.append('inputMint', inputMint)
         quoteUrl.searchParams.append('outputMint', outputMint)
         quoteUrl.searchParams.append('amount', amountInLamports.toString())
         quoteUrl.searchParams.append('slippageBps', (parseInt(slippage) * 100).toString())
         quoteUrl.searchParams.append('platformFeeBps', PLATFORM_FEE_BPS.toString())
+        quoteUrl.searchParams.append('referrer', REFERRAL_KEY)
         
-        // Get quote using URL with platform fee
+        // Get quote using URL with referral key
         const quoteResponse = await fetch(quoteUrl.toString()).then(res => res.json())
         
         console.log('Quote received:', {
@@ -152,10 +155,42 @@ function Module5() {
           platformFee: quoteResponse.platformFee
         })
         
+        // Get or create referral token account for the appropriate mint
+        // For buying, we use the output mint; for selling, we use the input mint
+        const mintToUse = isBuying ? outputMint : inputMint
+        let feeAccount = referralTokenAccounts[mintToUse]
+        
+        if (!feeAccount) {
+          // Initialize referral provider
+          const provider = new ReferralProvider(connection)
+          
+          // Get or create referral token account
+          const { tx, referralTokenAccountPubKey } = await provider.initializeReferralTokenAccount({
+            payerPubKey: walletPublicKey,
+            referralAccountPubKey: new PublicKey(REFERRAL_KEY),
+            mint: new PublicKey(mintToUse),
+          })
+          
+          const referralTokenAccount = await connection.getAccountInfo(referralTokenAccountPubKey)
+          
+          // Initialize token account if it doesn't exist
+          if (!referralTokenAccount) {
+            console.log("Initializing referral token account...")
+            const signature = await connection.sendTransaction(tx, [keypair])
+            await connection.confirmTransaction(signature)
+            console.log("Referral token account initialized:", referralTokenAccountPubKey.toBase58())
+          } else {
+            console.log("Referral token account already exists:", referralTokenAccountPubKey.toBase58())
+          }
+          
+          feeAccount = referralTokenAccountPubKey.toBase58()
+          setReferralTokenAccounts(prev => ({...prev, [mintToUse]: feeAccount}))
+        }
+        
         // Get serialized transactions
         console.log('Creating swap transaction...')
         
-        // Create swap request with fee recipient
+        // Create swap request
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const swapRequest: any = {
           quoteResponse,
@@ -167,8 +202,8 @@ function Module5() {
               priorityLevel: "high"
             }
           },
-          // Add fee recipient address - As of January 2025, you can directly use any token account
-          feeAccount: FEE_RECIPIENT
+          // Add fee account for referral
+          feeAccount: feeAccount
         }
         
         const swapResponse = await jupiterClient.swapPost({
