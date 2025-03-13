@@ -16,8 +16,6 @@ const SOLANA_WS_ENDPOINT = 'wss://ws-nd-220-380-828.p2pify.com/860578b990cf2dfee
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 // Platform fee settings
 const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
-// Jupiter Referral Key - This is your referral account public key
-const REFERRAL_KEY = 'FrSZiQdctfgzZzV8PTGnWvRxCRzA2oBXqBHK6faMXwTK'
 // Fee recipient address - This is where the fees will be sent
 const FEE_RECIPIENT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
 
@@ -136,7 +134,7 @@ function Module5() {
         // Get quote for swap with platform fee
         console.log('Getting quote...')
         
-        // Create URL for quote with referral key
+        // Create URL for quote with platform fee
         const quoteUrl = new URL(`${JUPITER_API_ENDPOINT}/quote`)
         quoteUrl.searchParams.append('inputMint', inputMint)
         quoteUrl.searchParams.append('outputMint', outputMint)
@@ -144,7 +142,7 @@ function Module5() {
         quoteUrl.searchParams.append('slippageBps', (parseInt(slippage) * 100).toString())
         quoteUrl.searchParams.append('platformFeeBps', PLATFORM_FEE_BPS.toString())
         
-        // Get quote using URL with referral key
+        // Get quote using URL with platform fee
         const quoteResponse = await fetch(quoteUrl.toString()).then(res => res.json())
         
         console.log('Quote received:', {
@@ -157,7 +155,7 @@ function Module5() {
         // Get serialized transactions
         console.log('Creating swap transaction...')
         
-        // Create swap request with referral key and fee recipient
+        // Create swap request with fee recipient
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const swapRequest: any = {
           quoteResponse,
@@ -169,14 +167,9 @@ function Module5() {
               priorityLevel: "high"
             }
           },
-          // Add referral key to swap request
-          referralKey: REFERRAL_KEY,
-          // Add fee recipient address
+          // Add fee recipient address - As of January 2025, you can directly use any token account
           feeAccount: FEE_RECIPIENT
         }
-        
-        // We don't need to specify feeAccount anymore as the referral program handles it
-        // The referral program will automatically route fees to the appropriate token accounts
         
         const swapResponse = await jupiterClient.swapPost({
           swapRequest
