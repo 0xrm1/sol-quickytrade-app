@@ -141,7 +141,6 @@ function Module5() {
         quoteUrl.searchParams.append('amount', amountInLamports.toString())
         quoteUrl.searchParams.append('slippageBps', (parseInt(slippage) * 100).toString())
         quoteUrl.searchParams.append('platformFeeBps', PLATFORM_FEE_BPS.toString())
-        quoteUrl.searchParams.append('referrer', REFERRAL_KEY)
         
         // Get quote using URL with referral key
         const quoteResponse = await fetch(quoteUrl.toString()).then(res => res.json())
@@ -156,7 +155,7 @@ function Module5() {
         // Get serialized transactions
         console.log('Creating swap transaction...')
         
-        // Create swap request
+        // Create swap request with referral key
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const swapRequest: any = {
           quoteResponse,
@@ -167,7 +166,9 @@ function Module5() {
               maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
               priorityLevel: "high"
             }
-          }
+          },
+          // Add referral key to swap request
+          referralKey: REFERRAL_KEY
         }
         
         // We don't need to specify feeAccount anymore as the referral program handles it
