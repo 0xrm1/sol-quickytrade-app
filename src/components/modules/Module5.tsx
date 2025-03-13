@@ -140,7 +140,6 @@ function Module5() {
           slippageBps: parseInt(slippage) * 100, // Convert percentage to basis points
           onlyDirectRoutes: false,
           restrictIntermediateTokens: true, // Restrict to highly liquid tokens for better success rate
-          platformFeeBps: PLATFORM_FEE_BPS // Add 0.5% platform fee
         })
         
         console.log('Quote received:', {
@@ -169,9 +168,9 @@ function Module5() {
         
         // Only add feeAccount for SOL transactions (either input or output is SOL)
         // This ensures we only collect fees in SOL which doesn't require token account initialization
-        if (inputMint === SOL_MINT || outputMint === SOL_MINT) {
-          swapRequest.feeAccount = PLATFORM_FEE_ACCOUNT
-        }
+        // if (inputMint === SOL_MINT || outputMint === SOL_MINT) {
+        //   swapRequest.feeAccount = PLATFORM_FEE_ACCOUNT
+        // }
         
         const swapResponse = await jupiterClient.swapPost({
           swapRequest
@@ -360,7 +359,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              A 0.5% platform fee is applied to all transactions. This fee is collected and helps support the development and maintenance of this service.
+              No platform fees are charged. Swap directly through Jupiter's liquidity pools with zero additional costs.
             </p>
           </div>
           
