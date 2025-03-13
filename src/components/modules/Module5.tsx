@@ -152,23 +152,28 @@ function Module5() {
         
         // Get serialized transactions
         console.log('Creating swap transaction...')
-        const swapResponse = await jupiterClient.swapPost({
-          swapRequest: {
-            quoteResponse,
-            userPublicKey: walletPublicKey.toString(),
-            dynamicComputeUnitLimit: true,
-            prioritizationFeeLamports: {
-              priorityLevelWithMaxLamports: {
-                maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
-                priorityLevel: "high"
-              }
-            },
-            // Add feeAccount parameter when SOL is involved in the swap
-            // This will direct the platform fee to our wallet
-            ...(inputMint === SOL_MINT || outputMint === SOL_MINT ? {
-              feeAccount: PLATFORM_FEE_ACCOUNT
-            } : {})
+        
+        // Create swap request with platform fee account
+        const swapRequest: any = {
+          quoteResponse,
+          userPublicKey: walletPublicKey.toString(),
+          dynamicComputeUnitLimit: true,
+          prioritizationFeeLamports: {
+            priorityLevelWithMaxLamports: {
+              maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
+              priorityLevel: "high"
+            }
           }
+        }
+        
+        // Add feeAccount parameter to collect platform fee
+        // This will direct the platform fee to our wallet
+        if (inputMint === SOL_MINT || outputMint === SOL_MINT) {
+          swapRequest.feeAccount = PLATFORM_FEE_ACCOUNT
+        }
+        
+        const swapResponse = await jupiterClient.swapPost({
+          swapRequest
         })
         
         console.log('Swap transaction created')
@@ -354,7 +359,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              A 1% platform fee is applied to all transactions. This fee is collected in SOL and helps support the development and maintenance of this service.
+              A 1% platform fee is applied to all transactions. This fee is collected when SOL is involved in the swap and helps support the development and maintenance of this service.
             </p>
           </div>
           
