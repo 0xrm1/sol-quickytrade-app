@@ -130,7 +130,7 @@ function Module5() {
             
             // Sign the transaction
             transaction.sign([keypair])
-          } catch (e) {
+          } catch (_) {
             // If that fails, try as a legacy transaction
             console.log('Not a VersionedTransaction, trying Legacy Transaction')
             transaction = Transaction.from(transactionBuffer)
