@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Connection, Keypair, Transaction, VersionedTransaction } from '@solana/web3.js'
+import { Connection, Keypair, Transaction, VersionedTransaction, PublicKey } from '@solana/web3.js'
 import bs58 from 'bs58'
 import { createJupiterApiClient } from '@jup-ag/api'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 // Constants
 const SOLANA_RPC_ENDPOINT = 'https://nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
@@ -15,6 +17,8 @@ const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 
 // USDC token mint address
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+// SOL token mint address
+const SOL_MINT = 'So11111111111111111111111111111111111111112'
 
 // This module handles automatic swap transactions with Jupiter API
 function Module5() {
@@ -22,12 +26,14 @@ function Module5() {
   const [privateKey, setPrivateKey] = useState('')
   const [tokenMint, setTokenMint] = useState(USDC_MINT) // Default to USDC
   const [amount, setAmount] = useState('')
+  const [sellPercentage, setSellPercentage] = useState('100') // Default to 100%
   const [slippage, setSlippage] = useState('1')
   const [priorityFee, setPriorityFee] = useState('5')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [txSignature, setTxSignature] = useState('')
+  const [isBuying, setIsBuying] = useState(true) // true for buying, false for selling
 
   // Handle swap transaction
   const handleSwap = async () => {
@@ -46,8 +52,12 @@ function Module5() {
         throw new Error('Token mint address is required')
       }
       
-      if (!amount || parseFloat(amount) <= 0) {
+      if (isBuying && (!amount || parseFloat(amount) <= 0)) {
         throw new Error('Amount must be greater than 0')
+      }
+      
+      if (!isBuying && (!sellPercentage || parseFloat(sellPercentage) <= 0 || parseFloat(sellPercentage) > 100)) {
+        throw new Error('Sell percentage must be between 1 and 100')
       }
       
       if (!slippage || parseFloat(slippage) < 0.1) {
@@ -78,16 +88,51 @@ function Module5() {
         const jupiterClient = createJupiterApiClient({
           basePath: JUPITER_API_ENDPOINT
         })
-        
-        // Convert SOL to lamports
-        const amountInLamports = Math.floor(parseFloat(amount) * 10**9)
+
+        // Determine input and output mints based on buy/sell mode
+        const inputMint = isBuying ? SOL_MINT : tokenMint
+        const outputMint = isBuying ? tokenMint : SOL_MINT
+
+        let amountInLamports
+
+        if (isBuying) {
+          // Convert SOL to lamports for buying
+          amountInLamports = Math.floor(parseFloat(amount) * 10**9)
+        } else {
+          // For selling, we need to get the token balance first
+          const tokenMintPubkey = new PublicKey(tokenMint)
+          
+          // Find the associated token account
+          const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+            walletPublicKey,
+            { mint: tokenMintPubkey }
+          )
+          
+          if (tokenAccounts.value.length === 0) {
+            throw new Error(`No token account found for ${tokenMint}`)
+          }
+          
+          // Get the token balance
+          const tokenAccount = tokenAccounts.value[0]
+          const tokenBalance = tokenAccount.account.data.parsed.info.tokenAmount.amount
+          
+          if (parseInt(tokenBalance) === 0) {
+            throw new Error(`You don't have any tokens to sell for ${tokenMint}`)
+          }
+          
+          // Calculate the amount to sell based on percentage
+          const sellRatio = parseFloat(sellPercentage) / 100
+          amountInLamports = Math.floor(parseInt(tokenBalance) * sellRatio)
+          
+          console.log(`Selling ${sellRatio * 100}% of ${tokenBalance} tokens = ${amountInLamports} lamports`)
+        }
         
         // Get quote for swap
         console.log('Getting quote...')
         const quoteResponse = await jupiterClient.quoteGet({
-          inputMint: 'So11111111111111111111111111111111111111112', // SOL mint address
-          outputMint: tokenMint,
-          amount: amountInLamports, // Amount in lamports
+          inputMint,
+          outputMint,
+          amount: amountInLamports,
           slippageBps: parseInt(slippage) * 100, // Convert percentage to basis points
           onlyDirectRoutes: false,
           restrictIntermediateTokens: true, // Restrict to highly liquid tokens for better success rate
@@ -163,7 +208,8 @@ function Module5() {
           }
           
           console.log('Transaction confirmed!')
-          setSuccess(`Swap executed successfully! Transaction signature: ${signature}`)
+          const action = isBuying ? 'bought' : 'sold'
+          setSuccess(`Successfully ${action} tokens! Transaction signature: ${signature}`)
         } catch (txError) {
           console.error('Transaction error:', txError)
           setError(`Transaction error: ${txError instanceof Error ? txError.message : 'Unknown error'}`)
@@ -190,6 +236,18 @@ function Module5() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {/* Buy/Sell Toggle */}
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="buy-sell-mode" 
+              checked={isBuying}
+              onCheckedChange={setIsBuying}
+            />
+            <Label htmlFor="buy-sell-mode">
+              {isBuying ? 'Buy Mode' : 'Sell Mode'}
+            </Label>
+          </div>
+          
           {/* Private Key Input */}
           <div className="space-y-2">
             <label htmlFor="privateKey" className="text-sm font-medium">
@@ -219,19 +277,40 @@ function Module5() {
             <p className="text-xs text-gray-500">Default is USDC mint address</p>
           </div>
           
-          {/* Amount Input */}
-          <div className="space-y-2">
-            <label htmlFor="amount" className="text-sm font-medium">
-              Amount (SOL)
-            </label>
-            <Input
-              id="amount"
-              type="number"
-              placeholder="0.0"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </div>
+          {/* Amount Input (Buy Mode) */}
+          {isBuying && (
+            <div className="space-y-2">
+              <label htmlFor="amount" className="text-sm font-medium">
+                Amount (SOL)
+              </label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="0.0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+          )}
+          
+          {/* Sell Percentage Input (Sell Mode) */}
+          {!isBuying && (
+            <div className="space-y-2">
+              <label htmlFor="sellPercentage" className="text-sm font-medium">
+                Sell Percentage (%)
+              </label>
+              <Input
+                id="sellPercentage"
+                type="number"
+                placeholder="100"
+                value={sellPercentage}
+                onChange={(e) => setSellPercentage(e.target.value)}
+                min="1"
+                max="100"
+              />
+              <p className="text-xs text-gray-500">Enter 100 to sell all tokens</p>
+            </div>
+          )}
           
           {/* Slippage Input */}
           <div className="space-y-2">
@@ -279,13 +358,13 @@ function Module5() {
             </div>
           )}
           
-          {/* Buy Button */}
+          {/* Action Button */}
           <Button 
             className="w-full" 
             onClick={handleSwap}
             disabled={isLoading}
           >
-            {isLoading ? 'Processing...' : 'Buy Token'}
+            {isLoading ? 'Processing...' : isBuying ? 'Buy Token' : 'Sell Token'}
           </Button>
         </div>
       </CardContent>
