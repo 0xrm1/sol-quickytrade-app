@@ -164,9 +164,7 @@ function Module5() {
               maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
               priorityLevel: "high"
             }
-          },
-          // Add feeAccount parameter to collect platform fee
-          feeAccount: PLATFORM_FEE_ACCOUNT
+          }
         }
         
         const swapResponse = await jupiterClient.swapPost({
