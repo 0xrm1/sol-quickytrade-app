@@ -162,8 +162,9 @@ function Module5() {
                 maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
                 priorityLevel: "high"
               }
-            },
-            feeAccount: PLATFORM_FEE_ACCOUNT // Add platform fee account
+            }
+            // Not using feeAccount parameter to avoid token account issues
+            // Jupiter will handle the fee internally
           }
         })
         
