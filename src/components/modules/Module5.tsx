@@ -165,11 +165,9 @@ function Module5() {
           }
         }
         
-        // Only add feeAccount for SOL transactions (either input or output is SOL)
-        // This ensures we only collect fees in SOL which doesn't require token account initialization
-        if (inputMint === SOL_MINT || outputMint === SOL_MINT) {
-          swapRequest.feeAccount = PLATFORM_FEE_ACCOUNT
-        }
+        // NO feeAccount parameter - this avoids the "range end index out of range for slice of length 0" error
+        // Since each token requires its own token account, we'll let Jupiter handle the fee collection
+        // instead of directing to a specific account
         
         const swapResponse = await jupiterClient.swapPost({
           swapRequest
@@ -358,7 +356,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              A 1% platform fee is applied to all transactions. This fee is collected in SOL to support platform operations.
+              A 1% platform fee is applied to all transactions. This fee is collected by Jupiter to support platform operations.
             </p>
           </div>
           
