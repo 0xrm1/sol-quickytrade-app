@@ -9,6 +9,7 @@ import bs58 from 'bs58'
 import { createJupiterApiClient } from '@jup-ag/api'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { ReferralProvider } from '@jup-ag/referral-sdk'
 
 // Constants
 const SOLANA_RPC_ENDPOINT = 'https://nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
@@ -131,19 +132,53 @@ function Module5() {
           console.log(`Selling ${sellRatio * 100}% of ${tokenBalance} tokens = ${amountInLamports} lamports`)
         }
         
+        // Initialize Referral Provider
+        const referralProvider = new ReferralProvider(connection)
+        
+        // Set referral account from our referral key
+        const referralAccount = new PublicKey(REFERRAL_KEY)
+        
+        // Set mint account for the token that will receive the fee
+        // We use the output mint for this
+        const mintAccount = new PublicKey(outputMint)
+        
+        // Get or create referral token account
+        console.log('Setting up referral token account...')
+        const { tx, referralTokenAccountPubKey } = 
+          await referralProvider.initializeReferralTokenAccount({
+            payerPubKey: walletPublicKey,
+            referralAccountPubKey: referralAccount,
+            mint: mintAccount,
+          })
+        
+        // Check if the token account exists
+        const referralTokenAccount = await connection.getAccountInfo(
+          referralTokenAccountPubKey
+        )
+        
+        // Initialize token account if it doesn't exist
+        if (!referralTokenAccount) {
+          console.log('Referral token account not found. Creating new account...')
+          const signature = await connection.sendTransaction(tx, [keypair])
+          await connection.confirmTransaction(signature)
+          console.log('Referral token account created:', referralTokenAccountPubKey.toBase58())
+        } else {
+          console.log('Using existing referral token account:', referralTokenAccountPubKey.toBase58())
+        }
+        
         // Get quote for swap with platform fee
         console.log('Getting quote...')
         
-        // Create URL for quote with referral key
+        // Create URL for quote with platform fee
         const quoteUrl = new URL(`${JUPITER_API_ENDPOINT}/quote`)
         quoteUrl.searchParams.append('inputMint', inputMint)
         quoteUrl.searchParams.append('outputMint', outputMint)
         quoteUrl.searchParams.append('amount', amountInLamports.toString())
         quoteUrl.searchParams.append('slippageBps', (parseInt(slippage) * 100).toString())
         quoteUrl.searchParams.append('platformFeeBps', PLATFORM_FEE_BPS.toString())
-        quoteUrl.searchParams.append('referrer', REFERRAL_KEY)
+        // We don't need to include the referrer in the URL anymore
         
-        // Get quote using URL with referral key
+        // Get quote using URL
         const quoteResponse = await fetch(quoteUrl.toString()).then(res => res.json())
         
         console.log('Quote received:', {
@@ -156,7 +191,7 @@ function Module5() {
         // Get serialized transactions
         console.log('Creating swap transaction...')
         
-        // Create swap request
+        // Create swap request with referral token account
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const swapRequest: any = {
           quoteResponse,
@@ -167,11 +202,10 @@ function Module5() {
               maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
               priorityLevel: "high"
             }
-          }
+          },
+          // Important: add the referral token account as the fee account
+          feeAccount: referralTokenAccountPubKey.toBase58()
         }
-        
-        // We don't need to specify feeAccount anymore as the referral program handles it
-        // The referral program will automatically route fees to the appropriate token accounts
         
         const swapResponse = await jupiterClient.swapPost({
           swapRequest
