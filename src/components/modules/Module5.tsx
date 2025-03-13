@@ -16,8 +16,8 @@ const SOLANA_WS_ENDPOINT = 'wss://ws-nd-220-380-828.p2pify.com/860578b990cf2dfee
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 // Platform fee settings
 const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
-// Jupiter Referral Key - Sadece URL parametresi olarak kullanacağız
-const REFERRAL_KEY = 'FrSZiQdctfgzZzV8PTGnWvRxCRzA2oBXqBHK6faMXwTK'
+// Jupiter Referral Key
+const REFERRAL_KEY = 'FrSZfQdctfgzZzV8PTGnWvRxCRzA2oBXqBHK6FaMXwTK'
 
 // USDC token mint address
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
@@ -169,6 +169,9 @@ function Module5() {
             }
           }
         }
+        
+        // We don't need to specify feeAccount anymore as the referral program handles it
+        // The referral program will automatically route fees to the appropriate token accounts
         
         const swapResponse = await jupiterClient.swapPost({
           swapRequest
