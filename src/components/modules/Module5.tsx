@@ -21,7 +21,8 @@ const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 const SOL_MINT = 'So11111111111111111111111111111111111111112'
 // Platform fee percentage (1%)
 const PLATFORM_FEE_BPS = 100 // 100 basis points = 1%
-// Platform fee is collected by Jupiter
+// Platform fee account (our wallet to collect fees)
+const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
 
 // This module handles automatic swap transactions with Jupiter API
 function Module5() {
@@ -163,7 +164,8 @@ function Module5() {
               maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
               priorityLevel: "high"
             }
-          }
+          },
+          feeAccount: PLATFORM_FEE_ACCOUNT
         }
         
         const swapResponse = await jupiterClient.swapPost({
