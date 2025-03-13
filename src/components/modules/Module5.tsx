@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { PublicKey } from '@solana/web3.js'
+import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
 import bs58 from 'bs58'
 import { createJupiterApiClient } from '@jup-ag/api'
 
 // Constants
+const SOLANA_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com'
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 
 // USDC token mint address
@@ -24,12 +25,14 @@ function Module5() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [txSignature, setTxSignature] = useState('')
 
   // Handle swap transaction
   const handleSwap = async () => {
     setIsLoading(true)
     setError('')
     setSuccess('')
+    setTxSignature('')
 
     try {
       // Validate inputs
@@ -54,11 +57,17 @@ function Module5() {
       }
 
       try {
+        // Create connection to Solana
+        const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed')
+        
         // Decode private key and create keypair
         const decodedPrivateKey = bs58.decode(privateKey)
         
-        // Get wallet public key from private key
-        const walletPublicKey = new PublicKey(bs58.encode(decodedPrivateKey.slice(32)))
+        // Create keypair from private key
+        const keypair = Keypair.fromSecretKey(decodedPrivateKey)
+        
+        // Get wallet public key
+        const walletPublicKey = keypair.publicKey
         
         // Initialize Jupiter API client
         const jupiterClient = createJupiterApiClient({
@@ -87,7 +96,7 @@ function Module5() {
         
         // Get serialized transactions
         console.log('Creating swap transaction...')
-        await jupiterClient.swapPost({
+        const swapResponse = await jupiterClient.swapPost({
           swapRequest: {
             quoteResponse,
             userPublicKey: walletPublicKey.toString(),
@@ -103,11 +112,53 @@ function Module5() {
         
         console.log('Swap transaction created')
         
-        // Simülasyon modunda olduğumuz için transaction'ı deserialize etmeyi atlayabiliriz
-        // Gerçek bir uygulamada, transaction'ı imzalayıp göndermek için deserialize etmemiz gerekir
+        // Process and sign transaction
+        const { swapTransaction } = swapResponse
         
-        // Başarı mesajı göster
-        setSuccess('Swap transaction created successfully! In a production environment, this would execute the swap.')
+        try {
+          // Deserialize transaction
+          let transaction
+          const transactionBuffer = Buffer.from(swapTransaction.replace(/^0x/, ''), 'hex')
+          
+          if (swapTransaction.startsWith('0x01')) {
+            // Versioned transaction
+            transaction = VersionedTransaction.deserialize(transactionBuffer)
+            
+            // Sign the transaction
+            transaction.sign([keypair])
+          } else {
+            // Legacy transaction
+            transaction = Transaction.from(transactionBuffer)
+            
+            // Sign the transaction
+            transaction.partialSign(keypair)
+          }
+          
+          console.log('Transaction signed, sending to network...')
+          
+          // Send the transaction to the network
+          const signature = await connection.sendRawTransaction(
+            transaction.serialize(),
+            { skipPreflight: false, maxRetries: 3 }
+          )
+          
+          console.log('Transaction sent:', signature)
+          setTxSignature(signature)
+          
+          // Wait for confirmation
+          console.log('Waiting for confirmation...')
+          const confirmation = await connection.confirmTransaction(signature, 'confirmed')
+          
+          if (confirmation.value.err) {
+            throw new Error(`Transaction failed: ${confirmation.value.err}`)
+          }
+          
+          console.log('Transaction confirmed!')
+          setSuccess(`Swap executed successfully! Transaction signature: ${signature}`)
+        } catch (txError) {
+          console.error('Transaction error:', txError)
+          setError(`Transaction error: ${txError instanceof Error ? txError.message : 'Unknown error'}`)
+        }
       } catch (apiError: unknown) {
         console.error('API error:', apiError)
         setError(apiError instanceof Error ? 
@@ -203,7 +254,21 @@ function Module5() {
           
           {/* Error and Success Messages */}
           {error && <p className="text-sm text-red-500">{error}</p>}
-          {success && <p className="text-sm text-green-500">{success}</p>}
+          {success && (
+            <div className="text-sm text-green-500 space-y-1">
+              <p>{success}</p>
+              {txSignature && (
+                <a 
+                  href={`https://solscan.io/tx/${txSignature}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  View on Solscan
+                </a>
+              )}
+            </div>
+          )}
           
           {/* Buy Button */}
           <Button 
