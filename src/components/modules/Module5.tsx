@@ -19,6 +19,10 @@ const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 // SOL token mint address
 const SOL_MINT = 'So11111111111111111111111111111111111111112'
+// Platform fee account
+const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
+// Platform fee percentage (1%)
+const PLATFORM_FEE_BPS = 100 // 100 basis points = 1%
 
 // This module handles automatic swap transactions with Jupiter API
 function Module5() {
@@ -127,7 +131,7 @@ function Module5() {
           console.log(`Selling ${sellRatio * 100}% of ${tokenBalance} tokens = ${amountInLamports} lamports`)
         }
         
-        // Get quote for swap
+        // Get quote for swap with platform fee
         console.log('Getting quote...')
         const quoteResponse = await jupiterClient.quoteGet({
           inputMint,
@@ -136,12 +140,14 @@ function Module5() {
           slippageBps: parseInt(slippage) * 100, // Convert percentage to basis points
           onlyDirectRoutes: false,
           restrictIntermediateTokens: true, // Restrict to highly liquid tokens for better success rate
+          platformFeeBps: PLATFORM_FEE_BPS // Add 1% platform fee
         })
         
         console.log('Quote received:', {
           inAmount: quoteResponse.inAmount,
           outAmount: quoteResponse.outAmount,
           otherAmountThreshold: quoteResponse.otherAmountThreshold,
+          platformFee: quoteResponse.platformFee
         })
         
         // Get serialized transactions
@@ -156,7 +162,8 @@ function Module5() {
                 maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
                 priorityLevel: "high"
               }
-            }
+            },
+            feeAccount: PLATFORM_FEE_ACCOUNT // Add platform fee account
           }
         })
         
@@ -338,6 +345,13 @@ function Module5() {
               value={priorityFee}
               onChange={(e) => setPriorityFee(e.target.value)}
             />
+          </div>
+          
+          {/* Platform Fee Info */}
+          <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
+            <p className="text-xs text-gray-500">
+              A 1% platform fee is applied to all transactions. This fee helps support the development and maintenance of this service.
+            </p>
           </div>
           
           {/* Error and Success Messages */}
