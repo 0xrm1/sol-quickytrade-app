@@ -10,6 +10,7 @@ import { createJupiterApiClient } from '@jup-ag/api'
 
 // Constants
 const SOLANA_RPC_ENDPOINT = 'https://nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
+const SOLANA_WS_ENDPOINT = 'wss://ws-nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 
 // USDC token mint address
@@ -58,8 +59,11 @@ function Module5() {
       }
 
       try {
-        // Create connection to Solana
-        const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed')
+        // Create connection to Solana with both HTTP and WebSocket endpoints
+        const connection = new Connection(
+          SOLANA_RPC_ENDPOINT, 
+          { wsEndpoint: SOLANA_WS_ENDPOINT, commitment: 'confirmed' }
+        )
         
         // Decode private key and create keypair
         const decodedPrivateKey = bs58.decode(privateKey)
