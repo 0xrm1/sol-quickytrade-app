@@ -23,6 +23,10 @@ const SOL_MINT = 'So11111111111111111111111111111111111111112'
 const PLATFORM_FEE_BPS = 100 // 100 basis points = 1%
 // Platform fee account (our wallet to collect fees)
 const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
+// Platform fee destination token account (for receiving fees)
+// This should be the associated token account for USDC owned by PLATFORM_FEE_ACCOUNT
+// In a production environment, you would need to create this account
+const PLATFORM_FEE_DESTINATION = PLATFORM_FEE_ACCOUNT // For simplicity, using the same account
 
 // This module handles automatic swap transactions with Jupiter API
 function Module5() {
@@ -170,6 +174,12 @@ function Module5() {
         // This will direct the platform fee to our wallet
         if (inputMint === SOL_MINT || outputMint === SOL_MINT) {
           swapRequest.feeAccount = PLATFORM_FEE_ACCOUNT
+          
+          // If we're dealing with SOL, we can also use destinationTokenAccount
+          // to direct the output to our fee account
+          if (outputMint === SOL_MINT) {
+            swapRequest.destinationTokenAccount = PLATFORM_FEE_DESTINATION
+          }
         }
         
         const swapResponse = await jupiterClient.swapPost({
