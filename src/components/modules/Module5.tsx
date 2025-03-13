@@ -164,8 +164,13 @@ function Module5() {
               maxLamports: parseInt(priorityFee) * 1000, // Convert MICRO-SOL to lamports
               priorityLevel: "high"
             }
-          },
-          feeAccount: PLATFORM_FEE_ACCOUNT
+          }
+        }
+        
+        // Only add feeAccount for SOL transactions (either input or output is SOL)
+        // This ensures we only collect fees in SOL which doesn't require token account initialization
+        if (inputMint === SOL_MINT || outputMint === SOL_MINT) {
+          swapRequest.feeAccount = PLATFORM_FEE_ACCOUNT
         }
         
         const swapResponse = await jupiterClient.swapPost({
