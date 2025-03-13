@@ -14,10 +14,9 @@ import { Label } from '@/components/ui/label'
 const SOLANA_RPC_ENDPOINT = 'https://nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
 const SOLANA_WS_ENDPOINT = 'wss://ws-nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
-// Platform fee is temporarily disabled due to token account initialization issues
-// const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
-// Platform fee recipient wallet is not used since we're letting Jupiter handle fee collection
-// const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
+// Platform fee settings
+const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
+const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5' // Platform fee recipient wallet
 
 // USDC token mint address
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
@@ -139,8 +138,8 @@ function Module5() {
           amount: amountInLamports,
           slippageBps: parseInt(slippage) * 100, // Convert percentage to basis points
           onlyDirectRoutes: false,
-          restrictIntermediateTokens: true // Restrict to highly liquid tokens for better success rate
-          // platformFeeBps parameter removed to avoid token account errors
+          restrictIntermediateTokens: true, // Restrict to highly liquid tokens for better success rate
+          platformFeeBps: PLATFORM_FEE_BPS // Add platform fee (1%)
         })
         
         console.log('Quote received:', {
@@ -167,9 +166,11 @@ function Module5() {
           }
         }
         
-        // NO feeAccount parameter - this avoids the "range end index out of range for slice of length 0" error
-        // Since each token requires its own token account, we'll let Jupiter handle the fee collection
-        // instead of directing to a specific account
+        // Only add feeAccount for SOL transactions (either input or output is SOL)
+        // This ensures we only collect fees in SOL which doesn't require token account initialization
+        if (inputMint === SOL_MINT || outputMint === SOL_MINT) {
+          swapRequest.feeAccount = PLATFORM_FEE_ACCOUNT
+        }
         
         const swapResponse = await jupiterClient.swapPost({
           swapRequest
@@ -358,7 +359,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              No platform fees are currently applied to transactions.
+              A 1% platform fee is applied to all transactions. This fee is collected in SOL to support platform operations.
             </p>
           </div>
           
