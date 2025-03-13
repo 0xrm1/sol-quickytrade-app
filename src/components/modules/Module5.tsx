@@ -116,18 +116,22 @@ function Module5() {
         const { swapTransaction } = swapResponse
         
         try {
-          // Deserialize transaction
+          // Deserialize transaction - Jupiter API returns base64 encoded transaction
           let transaction
-          const transactionBuffer = Buffer.from(swapTransaction.replace(/^0x/, ''), 'hex')
           
-          if (swapTransaction.startsWith('0x01')) {
-            // Versioned transaction
+          // Convert base64 to buffer
+          const transactionBuffer = Buffer.from(swapTransaction, 'base64')
+          
+          try {
+            // Try to deserialize as a versioned transaction first
             transaction = VersionedTransaction.deserialize(transactionBuffer)
+            console.log('Deserialized as VersionedTransaction')
             
             // Sign the transaction
             transaction.sign([keypair])
-          } else {
-            // Legacy transaction
+          } catch (e) {
+            // If that fails, try as a legacy transaction
+            console.log('Not a VersionedTransaction, trying Legacy Transaction')
             transaction = Transaction.from(transactionBuffer)
             
             // Sign the transaction
