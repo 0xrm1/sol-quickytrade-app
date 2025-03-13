@@ -19,8 +19,8 @@ const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 // SOL token mint address
 const SOL_MINT = 'So11111111111111111111111111111111111111112'
-// Platform fee percentage (1%)
-const PLATFORM_FEE_BPS = 100 // 100 basis points = 1%
+// Platform fee percentage (0.5%)
+const PLATFORM_FEE_BPS = 50 // 50 basis points = 0.5%
 // Platform fee account (our wallet to collect fees)
 const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
 
@@ -140,7 +140,7 @@ function Module5() {
           slippageBps: parseInt(slippage) * 100, // Convert percentage to basis points
           onlyDirectRoutes: false,
           restrictIntermediateTokens: true, // Restrict to highly liquid tokens for better success rate
-          platformFeeBps: PLATFORM_FEE_BPS // Add 1% platform fee
+          platformFeeBps: PLATFORM_FEE_BPS // Add 0.5% platform fee
         })
         
         console.log('Quote received:', {
@@ -355,7 +355,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              A 1% platform fee is applied to all transactions. This fee is collected and helps support the development and maintenance of this service.
+              A 0.5% platform fee is applied to all transactions. This fee is collected and helps support the development and maintenance of this service.
             </p>
           </div>
           
