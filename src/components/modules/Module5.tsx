@@ -131,10 +131,6 @@ function Module5() {
           console.log(`Selling ${sellRatio * 100}% of ${tokenBalance} tokens = ${amountInLamports} lamports`)
         }
         
-        // Calculate platform fee amount (1% of transaction amount)
-        // This will be the amount of USDC we want to receive as platform fee
-        const platformFeeAmount = Math.floor(amountInLamports * (PLATFORM_FEE_BPS / 10000))
-        
         // Get quote for swap with platform fee
         console.log('Getting quote...')
         const quoteResponse = await jupiterClient.quoteGet({
@@ -158,6 +154,7 @@ function Module5() {
         console.log('Creating swap transaction...')
         
         // Create swap request with platform fee account
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const swapRequest: any = {
           quoteResponse,
           userPublicKey: walletPublicKey.toString(),
