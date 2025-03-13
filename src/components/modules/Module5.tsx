@@ -16,7 +16,8 @@ const SOLANA_WS_ENDPOINT = 'wss://ws-nd-220-380-828.p2pify.com/860578b990cf2dfee
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 // Platform fee settings
 const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
-const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5' // Platform fee recipient wallet
+// Jupiter Referral Key
+const REFERRAL_KEY = 'FrSZiQdctfgzZzV8PTGnWvRxCRzA2oBXqBHK6faMXwTK'
 
 // USDC token mint address
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
@@ -132,15 +133,18 @@ function Module5() {
         
         // Get quote for swap with platform fee
         console.log('Getting quote...')
-        const quoteResponse = await jupiterClient.quoteGet({
-          inputMint,
-          outputMint,
-          amount: amountInLamports,
-          slippageBps: parseInt(slippage) * 100, // Convert percentage to basis points
-          onlyDirectRoutes: false,
-          restrictIntermediateTokens: true, // Restrict to highly liquid tokens for better success rate
-          platformFeeBps: PLATFORM_FEE_BPS // Add platform fee (1%)
-        })
+        
+        // Create URL for quote with referral key
+        const quoteUrl = new URL(`${JUPITER_API_ENDPOINT}/quote`)
+        quoteUrl.searchParams.append('inputMint', inputMint)
+        quoteUrl.searchParams.append('outputMint', outputMint)
+        quoteUrl.searchParams.append('amount', amountInLamports.toString())
+        quoteUrl.searchParams.append('slippageBps', (parseInt(slippage) * 100).toString())
+        quoteUrl.searchParams.append('platformFeeBps', PLATFORM_FEE_BPS.toString())
+        quoteUrl.searchParams.append('referrer', REFERRAL_KEY)
+        
+        // Get quote using URL with referral key
+        const quoteResponse = await fetch(quoteUrl.toString()).then(res => res.json())
         
         console.log('Quote received:', {
           inAmount: quoteResponse.inAmount,
@@ -152,7 +156,7 @@ function Module5() {
         // Get serialized transactions
         console.log('Creating swap transaction...')
         
-        // Create swap request with platform fee account
+        // Create swap request
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const swapRequest: any = {
           quoteResponse,
@@ -166,11 +170,8 @@ function Module5() {
           }
         }
         
-        // Only add feeAccount for SOL transactions (either input or output is SOL)
-        // This ensures we only collect fees in SOL which doesn't require token account initialization
-        if (inputMint === SOL_MINT || outputMint === SOL_MINT) {
-          swapRequest.feeAccount = PLATFORM_FEE_ACCOUNT
-        }
+        // We don't need to specify feeAccount anymore as the referral program handles it
+        // The referral program will automatically route fees to the appropriate token accounts
         
         const swapResponse = await jupiterClient.swapPost({
           swapRequest
@@ -359,7 +360,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              A 1% platform fee is applied to all transactions. This fee is collected in SOL to support platform operations.
+              A 1% platform fee is applied to all transactions. This fee is collected through Jupiter's referral program.
             </p>
           </div>
           
