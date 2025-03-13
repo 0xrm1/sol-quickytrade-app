@@ -9,7 +9,7 @@ import bs58 from 'bs58'
 import { createJupiterApiClient } from '@jup-ag/api'
 
 // Constants
-const SOLANA_RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com'
+const SOLANA_RPC_ENDPOINT = 'https://nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 
 // USDC token mint address
