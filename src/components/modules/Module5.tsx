@@ -16,8 +16,10 @@ const SOLANA_WS_ENDPOINT = 'wss://ws-nd-220-380-828.p2pify.com/860578b990cf2dfee
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 // Platform fee settings
 const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
-// Jupiter Referral Key
+// Jupiter Referral Key - This is your referral account public key
 const REFERRAL_KEY = 'FrSZiQdctfgzZzV8PTGnWvRxCRzA2oBXqBHK6faMXwTK'
+// Fee recipient address - This is where the fees will be sent
+const FEE_RECIPIENT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
 
 // USDC token mint address
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
@@ -155,7 +157,7 @@ function Module5() {
         // Get serialized transactions
         console.log('Creating swap transaction...')
         
-        // Create swap request with referral key
+        // Create swap request with referral key and fee recipient
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const swapRequest: any = {
           quoteResponse,
@@ -168,7 +170,9 @@ function Module5() {
             }
           },
           // Add referral key to swap request
-          referralKey: REFERRAL_KEY
+          referralKey: REFERRAL_KEY,
+          // Add fee recipient address
+          feeAccount: FEE_RECIPIENT
         }
         
         // We don't need to specify feeAccount anymore as the referral program handles it
