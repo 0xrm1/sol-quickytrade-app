@@ -139,8 +139,8 @@ function Module5() {
         const referralAccount = new PublicKey(REFERRAL_KEY)
         
         // Set mint account for the token that will receive the fee
-        // We use the output mint for this
-        const mintAccount = new PublicKey(outputMint)
+        // We always use SOL mint for fee collection
+        const mintAccount = new PublicKey(SOL_MINT)
         
         // Get or create referral token account
         console.log('Setting up referral token account...')
@@ -176,6 +176,8 @@ function Module5() {
         quoteUrl.searchParams.append('amount', amountInLamports.toString())
         quoteUrl.searchParams.append('slippageBps', (parseInt(slippage) * 100).toString())
         quoteUrl.searchParams.append('platformFeeBps', PLATFORM_FEE_BPS.toString())
+        // Always collect fees in SOL by specifying feeMint parameter
+        quoteUrl.searchParams.append('feeMint', SOL_MINT)
         // We don't need to include the referrer in the URL anymore
         
         // Get quote using URL
@@ -394,7 +396,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              A 1% platform fee is applied to all transactions. This fee is collected through Jupiter&apos;s referral program.
+              A 1% platform fee in SOL is applied to all transactions. This fee is collected through Jupiter&apos;s referral program.
             </p>
           </div>
           
