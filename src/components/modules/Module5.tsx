@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
+import { Connection, Keypair, Transaction, VersionedTransaction } from '@solana/web3.js'
 import bs58 from 'bs58'
 import { createJupiterApiClient } from '@jup-ag/api'
 
