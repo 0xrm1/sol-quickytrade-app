@@ -19,8 +19,6 @@ const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 // SOL token mint address
 const SOL_MINT = 'So11111111111111111111111111111111111111112'
-// Platform fee account
-const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
 // Platform fee percentage (1%)
 const PLATFORM_FEE_BPS = 100 // 100 basis points = 1%
 
