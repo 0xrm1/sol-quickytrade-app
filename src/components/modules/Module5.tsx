@@ -15,6 +15,7 @@ const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
 // USDC token mint address
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 
+// This module handles automatic swap transactions with Jupiter API
 function Module5() {
   // State for form inputs
   const [privateKey, setPrivateKey] = useState('')
