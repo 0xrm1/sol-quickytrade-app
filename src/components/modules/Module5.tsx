@@ -14,7 +14,8 @@ import { Label } from '@/components/ui/label'
 const SOLANA_RPC_ENDPOINT = 'https://nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
 const SOLANA_WS_ENDPOINT = 'wss://ws-nd-220-380-828.p2pify.com/860578b990cf2dfee6f98b15852612cf'
 const JUPITER_API_ENDPOINT = 'https://quote-api.jup.ag/v6'
-const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
+// Platform fee is temporarily disabled due to token account initialization issues
+// const PLATFORM_FEE_BPS = 100 // 1% fee in basis points (100 bps = 1%)
 // Platform fee recipient wallet is not used since we're letting Jupiter handle fee collection
 // const PLATFORM_FEE_ACCOUNT = 'FwjqEfw514eeR37z5u2pBKTJuSQCTBN8NTydae9C84R5'
 
@@ -138,8 +139,8 @@ function Module5() {
           amount: amountInLamports,
           slippageBps: parseInt(slippage) * 100, // Convert percentage to basis points
           onlyDirectRoutes: false,
-          restrictIntermediateTokens: true, // Restrict to highly liquid tokens for better success rate
-          platformFeeBps: PLATFORM_FEE_BPS // Add platform fee (1%)
+          restrictIntermediateTokens: true // Restrict to highly liquid tokens for better success rate
+          // platformFeeBps parameter removed to avoid token account errors
         })
         
         console.log('Quote received:', {
@@ -357,7 +358,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              A 1% platform fee is applied to all transactions. This fee is collected by Jupiter to support platform operations.
+              No platform fees are currently applied to transactions.
             </p>
           </div>
           
