@@ -360,7 +360,7 @@ function Module5() {
           {/* Platform Fee Info */}
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-md">
             <p className="text-xs text-gray-500">
-              A 1% platform fee is applied to all transactions. This fee is collected through Jupiter's referral program.
+              A 1% platform fee is applied to all transactions. This fee is collected through Jupiter&apos;s referral program.
             </p>
           </div>
           
